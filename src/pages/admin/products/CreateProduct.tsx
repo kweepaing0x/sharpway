@@ -1,0 +1,321 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../../lib/supabaseClient';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../../../components/ui/Card';
+import Input from '../../../components/ui/Input';
+import Button from '../../../components/ui/Button';
+import ImageUpload from '../../../components/ui/ImageUpload';
+import { ArrowLeft } from 'lucide-react';
+
+interface Store {
+  id: string;
+  name: string;
+}
+
+interface ProductCategory {
+  id: string;
+  name: string;
+  description?: string;
+  is_active: boolean;
+}
+
+const PRODUCT_CATEGORIES = [
+  'Clothing',
+  'Electronics',
+  'Food & Beverages',
+  'Home & Living',
+  'Health & Beauty',
+  'Sports & Leisure',
+  'Books & Stationery',
+  'Services',
+  'Other'
+];
+
+const CreateProduct: React.FC = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+
+  const [formData, setFormData] = useState({
+    store_id: '',
+    name: '',
+    description: '',
+    price: '',
+    image_url: '',
+    category: '',
+    stock_quantity: '0'
+  });
+
+  useEffect(() => {
+    fetchStores();
+    fetchProductCategories();
+  }, []);
+
+  const fetchStores = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('stores')
+        .select('id, name')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setStores(data || []);
+    } catch (error: any) {
+      console.error('Error fetching stores:', error);
+      setError(error.message);
+    }
+  };
+
+  const fetchProductCategories = async () => {
+    setLoadingCategories(true);
+    try {
+      const { data, error } = await supabase
+        .from('product_categories')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+      
+      if (error) throw error;
+      setProductCategories(data || []);
+    } catch (err) {
+      console.error('Error fetching product categories:', err);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleImageChange = (url: string) => {
+    setFormData(prev => ({
+      ...prev,
+      image_url: url
+    }));
+  };
+
+  const validateForm = () => {
+    if (!formData.store_id) return 'Please select a store';
+    if (!formData.name.trim()) return 'Product name is required';
+    if (!formData.category) return 'Category is required';
+    if (!formData.price || parseFloat(formData.price) < 0) {
+      return 'Please enter a valid price';
+    }
+    if (parseInt(formData.stock_quantity) < 0) {
+      return 'Stock quantity cannot be negative';
+    }
+    return null;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .insert([
+          {
+            ...formData,
+            price: parseFloat(formData.price),
+            stock_quantity: parseInt(formData.stock_quantity),
+            in_stock: parseInt(formData.stock_quantity) > 0
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      navigate('/admin/products');
+    } catch (error: any) {
+      console.error('Error creating product:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto py-6">
+      <div className="mb-6">
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/admin/products')}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Products
+        </Button>
+        <h1 className="text-2xl font-bold text-gray-900">Create New Product</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Add a new product to your store
+        </p>
+      </div>
+
+      <Card>
+        <form onSubmit={handleSubmit}>
+          <CardHeader>
+            <CardTitle>Product Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
+                {error}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Store
+              </label>
+              <select
+                name="store_id"
+                value={formData.store_id}
+                onChange={handleInputChange}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                required
+              >
+                <option value="">Select a store</option>
+                {stores.map(store => (
+                  <option key={store.id} value={store.id}>
+                    {store.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Input
+                label="Product Name"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+                fullWidth
+              />
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Category
+                </label>
+                <select
+                  name="category"
+                  value={formData.category}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                  required
+                >
+                  <option value="">Select a category</option>
+                  {loadingCategories ? (
+                    <option value="" disabled>Loading categories...</option>
+                  ) : productCategories.length > 0 ? (
+                    productCategories.map(category => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))
+                  ) : (
+                    PRODUCT_CATEGORIES.map(category => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                rows={3}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Product Image
+              </label>
+              <ImageUpload
+                value={formData.image_url}
+                onChange={handleImageChange}
+                onError={setError}
+                bucket="products"
+                folder="products"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Input
+                label="Price (THB)"
+                name="price"
+                type="number"
+                min="0"
+                step="0.01"
+                value={formData.price}
+                onChange={handleInputChange}
+                required
+                fullWidth
+                helperText="Enter price in Thai Baht"
+              />
+
+              <Input
+                label="Stock Quantity"
+                name="stock_quantity"
+                type="number"
+                min="0"
+                value={formData.stock_quantity}
+                onChange={handleInputChange}
+                required
+                fullWidth
+              />
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-end space-x-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => navigate('/admin/products')}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              isLoading={loading}
+            >
+              Create Product
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
+  );
+};
+
+export default CreateProduct;

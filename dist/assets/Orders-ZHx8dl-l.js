@@ -1,0 +1,1 @@
+import{j as r}from"./ui-components-CL-10tNC.js";import"./react-vendor-NfsKhbMh.js";import"./supabase-DQ7Oc2S5.js";const a=()=>r.jsxs("div",{children:[r.jsx("h1",{children:"Store Manager Orders"}),r.jsx("p",{children:"This is the orders management page for store managers."})]});export{a as default};

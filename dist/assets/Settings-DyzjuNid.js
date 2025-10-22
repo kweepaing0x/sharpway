@@ -1,0 +1,1 @@
+import{j as t}from"./ui-components-CL-10tNC.js";import"./react-vendor-NfsKhbMh.js";import"./supabase-DQ7Oc2S5.js";const i=()=>t.jsxs("div",{children:[t.jsx("h1",{children:"Store Manager Settings"}),t.jsx("p",{children:"This is the settings page for store managers."})]});export{i as default};

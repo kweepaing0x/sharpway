@@ -129,15 +129,7 @@ const HotelsPage: React.FC = () => {
 
   }, [hotels]);
 
-
-  const categories = useMemo(() => {       clearTimeout(minLoadingTimeRef.current);
-      }
-    };
-  }, [isLoading]);
-
-
   const categories = useMemo(() => {
-
     if (!hotels) return [];
 
     const uniqueCategories = Array.from(new Set(hotels.map((hotel) => hotel.category)))

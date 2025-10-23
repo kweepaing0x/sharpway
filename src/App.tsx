@@ -42,6 +42,7 @@ const SponsoredContentManager = lazy(() => import('./pages/admin/SponsoredConten
 const HotelsList = lazy(() => import('./pages/admin/hotels/HotelsList'));
 const CreateHotel = lazy(() => import('./pages/admin/hotels/CreateHotel'));
 const TaxisList = lazy(() => import('./pages/admin/taxis/TaxisList'));
+const CreateTaxi = lazy(() => import('./pages/admin/taxis/CreateTaxi'));
 
 // Store Manager components
 const StoreManagerLogin = lazy(() => import('./pages/store-manager/StoreManagerLogin'));
@@ -117,6 +118,7 @@ function App() {
                   <Route path="hotels" element={<HotelsList />} />
                   <Route path="hotels/new" element={<CreateHotel />} />
                   <Route path="taxis" element={<TaxisList />} />
+                  <Route path="taxis/new" element={<CreateTaxi />} />
                 </Route>
                 
                 {/* Store Manager Routes */}
